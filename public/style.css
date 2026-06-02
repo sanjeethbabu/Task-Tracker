@@ -237,10 +237,17 @@ header {
     color: white;
     box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
 }
+.tab-btn.active:hover {
+    background: linear-gradient(45deg, var(--primary-glow), var(--secondary));
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(139, 92, 246, 0.4);
+}
 
 .tab-btn:hover:not(.active) {
-    background: rgba(255,255,255,0.05);
-    color: var(--text-main);
+    background: rgba(255,255,255,0.03);
+    color: var(--text-dim);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(255,255,255,0.05);
 }
 
 .list-wrapper {
