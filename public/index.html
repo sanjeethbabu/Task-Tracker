@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sanjeeth's Task Tracker</title>
+    <meta name="theme-color" content="#0f172a">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg?v=2">
+    <title>TicTrack</title>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,77 +19,123 @@
         <div class="blob blob-3"></div>
     </div>
 
-    <main class="app-container">
-        <header>
-            <div class="logo">
-                <i class="fas fa-layer-group"></i>
-                <h1>Task<span>Tracker</span></h1>
-            </div>
-            <p class="subtitle">Synced with Excel</p>
-        </header>
-
-        <section class="input-section">
-            <form id="todo-form">
-                <input type="text" id="task-input" placeholder="What needs to be done?" required autocomplete="off">
-                <input type="date" id="end-at-input" title="End date (optional)">
-                <button type="submit" id="add-btn">
-                    <i class="fas fa-plus"></i>
-                    <span>Add Task</span>
-                </button>
-            </form>
-        </section>
-
-        <section class="tabs-section">
-            <div class="tabs-nav">
-                <button class="tab-btn active" data-tab="active">
-                    <i class="fas fa-circle-check"></i> Active
-                </button>
-                <button class="tab-btn" data-tab="completed">
-                    <i class="fas fa-circle-check"></i> Completed
-                </button>
-            </div>
-            <div class="tab-content">
-                <div id="active-panel" class="tab-panel active">
-                    <div class="list-header">
-                        <h2>Active Tasks <span id="active-count">0</span></h2>
-                    </div>
-                    <ul id="active-list" class="task-list"></ul>
+    <header class="top-nav">
+        <div class="nav-inner">
+            <div class="nav-brand">
+                <div class="nav-icon">
+                    <i class="fas fa-check-double"></i>
                 </div>
-                <div id="completed-panel" class="tab-panel">
-                    <div class="list-header">
-                        <h2>Completed Tasks <span id="completed-count">0</span></h2>
-                    </div>
-                    <ul id="completed-list" class="task-list"></ul>
+                <div class="nav-text">
+                    <span class="nav-title"><span class="nav-title-white">Tic</span> Track</span>
+                    <span class="nav-tagline">Tick 'Em to Break It </span>
                 </div>
-            </div>
-        </section>
-    </main>
-
-    <footer>
-        <p>&copy; 2026 Task Tracker by Sanjeeth. Maintaining data in <code>tasks.xlsx</code></p>
-    </footer>
-
-    <div id="duplicate-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <i class="fas fa-exclamation-triangle"></i>
-                <h3>Similar Task Exists</h3>
-            </div>
-            <div class="modal-body">
-                <p>A similar task already exists:</p>
-                <p class="modal-task-text" id="modal-task-text"></p>
-                <div class="modal-details">
-                    <span><i class="fas fa-clock"></i> Last done: <strong id="modal-last-done"></strong></span>
-                    <span><i class="fas fa-info-circle"></i> Status: <strong id="modal-status"></strong></span>
-                </div>
-                <p class="modal-question">Do you want to create it again?</p>
-            </div>
-            <div class="modal-footer">
-                <button class="modal-btn cancel-btn" id="modal-cancel">Cancel</button>
-                <button class="modal-btn create-btn" id="modal-create-anyway">Create Anyway</button>
             </div>
         </div>
+    </header>
+
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-card">
+                <div class="sidebar-label">Clock</div>
+                <div class="sidebar-clock">
+                    <canvas id="analog-clock" width="140" height="140"></canvas>
+                </div>
+            </div>
+            <div class="sidebar-card digital-card">
+                <div class="digital-time" id="digital-time">00:00:00</div>
+                <div class="digital-date" id="digital-date">Mon, 02 Jan</div>
+                <div class="greeting" id="greeting">Good evening</div>
+            </div>
+            <div class="sidebar-card">
+                <div class="sidebar-label">Calendar</div>
+                <div class="sidebar-calendar" id="calendar"></div>
+            </div>
+        </aside>
+
+        <main class="app-container">
+            <section class="input-section">
+<form id="todo-form">
+    <div class="form-row">
+        <input type="text" id="assignee-input" placeholder="Assignee name..." autocomplete="off">
+        <input type="text" id="task-input" placeholder="Add a task..." required autocomplete="off">
+        <label class="time-label" for="task-time">⏰</label>
+        <input type="time" id="task-time" title="Task time">
+        <input type="hidden" id="task-date-input">
     </div>
+    <button type="submit" id="add-btn">
+        <i class="fas fa-plus"></i>
+    </button>
+</form>
+            </section>
+
+            <section class="tabs-section">
+                <div class="tabs-nav">
+                    <button class="tab-btn active" data-tab="active">Active</button>
+                    <button class="tab-btn" data-tab="completed">Completed</button>
+                </div>
+                <div class="list-wrapper">
+                    <ul id="task-list" class="task-list"></ul>
+                </div>
+            </section>
+        </main>
+
+        <aside class="right-panel">
+            <div class="right-card insights-card">
+                <div class="right-card-title"><i class="fas fa-chart-pie"></i> Quick Look</div>
+                <div class="insights-badge" id="stat-productivity">0% productivity</div>
+                <div class="stat-row">
+                    <div class="stat-chip total">
+                        <div class="stat-chip-value" id="stat-total-main">0</div>
+                        <div class="stat-chip-label">Total</div>
+                    </div>
+                    <div class="stat-chip active">
+                        <div class="stat-chip-value" id="stat-active-main">0</div>
+                        <div class="stat-chip-label">Active</div>
+                    </div>
+                    <div class="stat-chip done">
+                        <div class="stat-chip-value" id="stat-done-main">0</div>
+                        <div class="stat-chip-label">Done</div>
+                    </div>
+                </div>
+                <div class="completion-row">
+                    <div class="completion-item">
+                        <div class="completion-meta">
+                            <span class="completion-pct" id="stat-today-pct-main">0%</span>
+                            <span class="completion-name">Today</span>
+                        </div>
+                        <div class="progress-bar"><div class="progress-fill" id="stat-today-bar-main" style="width:0%"></div></div>
+                    </div>
+                    <div class="completion-item">
+                        <div class="completion-meta">
+                            <span class="completion-pct" id="stat-all-pct-main">0%</span>
+                            <span class="completion-name">Overall</span>
+                        </div>
+                        <div class="progress-bar"><div class="progress-fill" id="stat-all-bar-main" style="width:0%"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-card stat-card">
+                <div class="right-card-title"><i class="fas fa-bolt"></i> Focus</div>
+                <div class="focus-row">
+                    <div class="focus-box">
+                        <div class="focus-value" id="stat-today-active">0</div>
+                        <div class="focus-label">Today Active</div>
+                    </div>
+                    <div class="focus-box">
+                        <div class="focus-value" id="stat-today-completed">0</div>
+                        <div class="focus-label">Today Done</div>
+                    </div>
+                </div>
+                <div class="progress-bar"><div class="progress-fill" id="stat-today-focus" style="width:0%"></div></div>
+                <div class="progress-text"><span id="stat-today-focus-text">0%</span> today</div>
+            </div>
+        </aside>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 TicTrack &mdash; Crafted by <strong style="color:var(--primary)">Sanjeeth</strong> &nbsp;&middot;&nbsp; All task data is stored in <code>tasks.xlsx</code></p>
+    </footer>
 
     <script src="app.js"></script>
 </body>
