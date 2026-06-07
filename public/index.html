@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,6 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
+
 <body>
     <div class="background-blobs">
         <div class="blob blob-1"></div>
@@ -26,7 +28,7 @@
                     <i class="fas fa-check-double"></i>
                 </div>
                 <div class="nav-text">
-                    <span class="nav-title"><span class="nav-title-white">Tic</span> Track</span>
+                    <span class="nav-title"><span class="nav-title-white">Tic</span> track</span>
                     <span class="nav-tagline">Tick 'Em to Break It </span>
                 </div>
             </div>
@@ -54,18 +56,18 @@
 
         <main class="app-container">
             <section class="input-section">
-<form id="todo-form">
-    <div class="form-row">
-        <input type="text" id="assignee-input" placeholder="Assignee name..." autocomplete="off">
-        <input type="text" id="task-input" placeholder="Add a task..." required autocomplete="off">
-        <label class="time-label" for="task-time">⏰</label>
-        <input type="time" id="task-time" title="Task time">
-        <input type="hidden" id="task-date-input">
-    </div>
-    <button type="submit" id="add-btn">
-        <i class="fas fa-plus"></i>
-    </button>
-</form>
+                <form id="todo-form">
+                    <div class="form-row">
+                        <input type="text" id="assignee-input" placeholder="Assignee name..." autocomplete="off">
+                        <input type="text" id="task-input" placeholder="Add a task..." required autocomplete="off">
+                        <label class="time-label" for="task-time">⏰</label>
+                        <input type="time" id="task-time" title="Task time">
+                        <input type="hidden" id="task-date-input">
+                    </div>
+                    <button type="submit" id="add-btn">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </form>
             </section>
 
             <section class="tabs-section">
@@ -103,14 +105,18 @@
                             <span class="completion-pct" id="stat-today-pct-main">0%</span>
                             <span class="completion-name">Today</span>
                         </div>
-                        <div class="progress-bar"><div class="progress-fill" id="stat-today-bar-main" style="width:0%"></div></div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="stat-today-bar-main" style="width:0%"></div>
+                        </div>
                     </div>
                     <div class="completion-item">
                         <div class="completion-meta">
                             <span class="completion-pct" id="stat-all-pct-main">0%</span>
                             <span class="completion-name">Overall</span>
                         </div>
-                        <div class="progress-bar"><div class="progress-fill" id="stat-all-bar-main" style="width:0%"></div></div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="stat-all-bar-main" style="width:0%"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -127,16 +133,20 @@
                         <div class="focus-label">Today Done</div>
                     </div>
                 </div>
-                <div class="progress-bar"><div class="progress-fill" id="stat-today-focus" style="width:0%"></div></div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="stat-today-focus" style="width:0%"></div>
+                </div>
                 <div class="progress-text"><span id="stat-today-focus-text">0%</span> today</div>
             </div>
         </aside>
     </div>
 
     <footer>
-        <p>&copy; 2026 TicTrack &mdash; Crafted by <strong style="color:var(--primary)">Sanjeeth</strong> &nbsp;&middot;&nbsp; All task data is stored in <code>tasks.xlsx</code></p>
+        <p>&copy; 2026 TicTrack &mdash; Crafted by <strong style="color:var(--primary)">Sanjeeth</strong>
+            &nbsp;&middot;&nbsp; All task data is stored in <code>tasks.xlsx</code></p>
     </footer>
 
     <script src="app.js"></script>
 </body>
+
 </html>
