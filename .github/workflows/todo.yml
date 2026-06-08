@@ -1,9 +1,12 @@
 name: Todo
+
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
   pull_request:
-    branches: [ "main" ]
+    branches:
+      - main
 
 jobs:
   build:
@@ -11,6 +14,7 @@ jobs:
 
     strategy:
       matrix:
+<<<<<<< HEAD
         node-version: [18.x, 20.2, 22.x]
     
 
@@ -25,3 +29,22 @@ jobs:
       run: npm run dev
     - name: Run tests
       run: echo "All GOOD"
+=======
+        node-version: [18.x, 20.x, 22.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build --if-present
+>>>>>>> 9318721b97e7291acf979791ee06ad23f7faa20c
