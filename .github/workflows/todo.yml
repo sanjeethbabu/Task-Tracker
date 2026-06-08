@@ -11,7 +11,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [18.x, 20.2, 22.x]
+        node-version: [18.x, 20.x, 22.x]
     
 
     steps:
@@ -22,6 +22,11 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
     - name: Install dependencies
-      run: npm run dev
+      run: npm ci
     - name: Run tests
-      run: echo "All GOOD"
+      run: npm test --if-present
+    - name: Start application and verify visibility
+      run: |
+        npm run dev &
+        npx wait-on http://localhost:3000 --timeout 30000
+        curl -f http://localhost:3000
