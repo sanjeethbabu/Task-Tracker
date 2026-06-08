@@ -1,6 +1,6 @@
  const express = require('express');
 const cors = require('cors');
-const ExcelJS = require('excel');
+const ExcelJS = require('exceljs');
 const path = require('path');
 const fs = require('fs');
 
