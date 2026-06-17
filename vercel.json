@@ -1,5 +1,11 @@
 {
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/server.js" }
-  ]
+  "experimentalServices": {
+    "task-tracker": {
+      "type": "web",
+      "routePrefix": "/",
+      "framework": "express",
+      "entrypoint": "server.js",
+      "buildCommand": "npm ci"
+    }
+  }
 }
