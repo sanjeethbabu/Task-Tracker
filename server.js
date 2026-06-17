@@ -3,12 +3,14 @@ const cors = require('cors');
 const ExcelJS = require('exceljs');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 
 const app = express();
 const port = process.env.PORT || 3000;
+const IS_SERVERLESS = !!(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
 // Vercel serverless only allows writes under /tmp
-const EXCEL_FILE = process.env.VERCEL
-    ? path.join('/tmp', 'tasks.xlsx')
+const EXCEL_FILE = IS_SERVERLESS
+    ? path.join(os.tmpdir(), 'tasks.xlsx')
     : path.join(__dirname, 'tasks.xlsx');
 
 let excelReady = null;
@@ -61,14 +63,34 @@ function applyHeaderStyle(sheet) {
     sheet.views = [{ state: 'frozen', ySplit: 1 }];
 }
 
+async function saveWorkbook(workbook) {
+    if (IS_SERVERLESS) {
+        const buffer = await workbook.xlsx.writeBuffer();
+        await fs.promises.writeFile(EXCEL_FILE, buffer);
+    } else {
+        await workbook.xlsx.writeFile(EXCEL_FILE);
+    }
+}
+
+async function loadWorkbook() {
+    const workbook = new ExcelJS.Workbook();
+    if (IS_SERVERLESS) {
+        const data = await fs.promises.readFile(EXCEL_FILE);
+        await workbook.xlsx.load(data);
+    } else {
+        await workbook.xlsx.readFile(EXCEL_FILE);
+    }
+    return workbook;
+}
+
 async function initExcel() {
     if (!fs.existsSync(EXCEL_FILE)) {
         const workbook = new ExcelJS.Workbook();
         const sheet = workbook.addWorksheet('Tasks');
         sheet.columns = COLUMNS;
         applyHeaderStyle(sheet);
-        await workbook.xlsx.writeFile(EXCEL_FILE);
-        console.log('Created new tasks.xlsx');
+        await saveWorkbook(workbook);
+        console.log('Created new tasks.xlsx at', EXCEL_FILE);
     }
 }
 
@@ -78,8 +100,7 @@ function normalizeTaskText(text) {
 
 async function getTaskSheet() {
     await ensureExcel();
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.readFile(EXCEL_FILE);
+    const workbook = await loadWorkbook();
     const sheet = workbook.getWorksheet('Tasks');
     // Migrate if columns are outdated (missing new columns)
     const keys = (sheet.columns || []).map(c => c.key);
@@ -167,7 +188,7 @@ app.post('/api/tasks', async (req, res) => {
             deletedAt:   '',
             record:      'PRE'
         });
-        await workbook.xlsx.writeFile(EXCEL_FILE);
+        await saveWorkbook(workbook);
         res.status(201).json({ id, task, assignee: assignee || '', status: 'Active', createdAt, scheduledAt, completedAt: '' });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -195,7 +216,7 @@ app.patch('/api/tasks/:id', async (req, res) => {
             found = true;
         });
         if (!found) return res.status(404).json({ error: 'Task not found' });
-        await workbook.xlsx.writeFile(EXCEL_FILE);
+        await saveWorkbook(workbook);
         res.json({ message: 'Task updated successfully' });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -215,16 +236,26 @@ app.delete('/api/tasks/:id', async (req, res) => {
             found = true;
         });
         if (!found) return res.status(404).json({ error: 'Task not found' });
-        await workbook.xlsx.writeFile(EXCEL_FILE);
+        await saveWorkbook(workbook);
         res.json({ message: 'Task deleted successfully' });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
+app.get('/api/health', (req, res) => {
+    res.json({ ok: true, serverless: IS_SERVERLESS, excelFile: EXCEL_FILE });
+});
+
+app.use((err, req, res, next) => {
+    console.error('Unhandled error:', err);
+    res.status(500).json({ error: err.message || 'Internal server error' });
+});
+
 module.exports = app;
 
-if (!process.env.VERCEL) {
+// Only start a local server when run directly (not when imported by Vercel)
+if (require.main === module) {
     ensureExcel().then(() => {
         app.listen(port, () => {
             console.log(`Server running at http://localhost:${port}`);
