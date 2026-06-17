@@ -118,13 +118,16 @@ function renderAnalogClock(now) {
         const numRadius = radius - 26;
         ctx.fillText(i, Math.cos(angle) * numRadius, Math.sin(angle) * numRadius);
     }
+    const secondHandLen = radius - 26;
+    const minuteHandLen = radius - 40;
+    const hourHandLen = secondHandLen * 0.55;
     ctx.shadowColor = 'rgba(236,72,153,0.8)';
     ctx.shadowBlur = 10;
     ctx.strokeStyle = '#ec4899';
     ctx.lineWidth = 3.5;
     ctx.beginPath();
     ctx.moveTo(0, 0);
-    ctx.lineTo(Math.cos(((sc + ms / 1000) / 60) * Math.PI * 2 - Math.PI / 2) * (radius - 26), Math.sin(((sc + ms / 1000) / 60) * Math.PI * 2 - Math.PI / 2) * (radius - 26));
+    ctx.lineTo(Math.cos(((sc + ms / 1000) / 60) * Math.PI * 2 - Math.PI / 2) * secondHandLen, Math.sin(((sc + ms / 1000) / 60) * Math.PI * 2 - Math.PI / 2) * secondHandLen);
     ctx.stroke();
     ctx.shadowColor = '#8b5cf6';
     ctx.shadowBlur = 10;
@@ -132,7 +135,7 @@ function renderAnalogClock(now) {
     ctx.lineWidth = 3.5;
     ctx.beginPath();
     ctx.moveTo(0, 0);
-    ctx.lineTo(Math.cos(((mn + sc / 60) / 60) * Math.PI * 2 - Math.PI / 2) * (radius - 40), Math.sin(((mn + sc / 60) / 60) * Math.PI * 2 - Math.PI / 2) * (radius - 40));
+    ctx.lineTo(Math.cos(((mn + sc / 60) / 60) * Math.PI * 2 - Math.PI / 2) * minuteHandLen, Math.sin(((mn + sc / 60) / 60) * Math.PI * 2 - Math.PI / 2) * minuteHandLen);
     ctx.stroke();
     ctx.shadowColor = '#f8fafc';
     ctx.shadowBlur = 8;
@@ -140,7 +143,7 @@ function renderAnalogClock(now) {
     ctx.lineWidth = 4;
     ctx.beginPath();
     ctx.moveTo(0, 0);
-    ctx.lineTo(Math.cos(((hr + mn / 60) / 12) * Math.PI * 2 - Math.PI / 2) * (radius - 48), Math.sin(((hr + mn / 60) / 12) * Math.PI * 2 - Math.PI / 2) * (radius - 48));
+    ctx.lineTo(Math.cos(((hr + mn / 60) / 12) * Math.PI * 2 - Math.PI / 2) * hourHandLen, Math.sin(((hr + mn / 60) / 12) * Math.PI * 2 - Math.PI / 2) * hourHandLen);
     ctx.stroke();
     ctx.restore();
 }
