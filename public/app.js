@@ -140,7 +140,7 @@ function renderAnalogClock(now) {
     ctx.lineWidth = 4;
     ctx.beginPath();
     ctx.moveTo(0, 0);
-    ctx.lineTo(Math.cos(((hr + mn / 60) / 12) * Math.PI * 2 - Math.PI / 2) * (radius - 56), Math.sin(((hr + mn / 60) / 12) * Math.PI * 2 - Math.PI / 2) * (radius - 56));
+    ctx.lineTo(Math.cos(((hr + mn / 60) / 12) * Math.PI * 2 - Math.PI / 2) * (radius - 48), Math.sin(((hr + mn / 60) / 12) * Math.PI * 2 - Math.PI / 2) * (radius - 48));
     ctx.stroke();
     ctx.restore();
 }
