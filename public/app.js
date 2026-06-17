@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3000/api';
+const API_URL = '/api';
 
 const todoForm = document.getElementById('todo-form');
 const taskInput = document.getElementById('task-input');

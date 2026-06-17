@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: task-tracker
+    env: node
+    buildCommand: npm ci
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
