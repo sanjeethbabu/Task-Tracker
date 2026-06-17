@@ -5,6 +5,20 @@ const os = require('os');
 const IS_SERVERLESS = !!(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
 const USE_SUPABASE = !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
 
+function getSupabaseUrl() {
+    const url = (process.env.SUPABASE_URL || '').trim().replace(/\/$/, '');
+    if (!url) return '';
+    if (url.includes('supabase.com/dashboard')) {
+        const match = url.match(/project\/([a-z0-9]+)/i);
+        if (match) return `https://${match[1]}.supabase.co`;
+    }
+    return url;
+}
+
+function isValidSupabaseUrl(url) {
+    return /^https:\/\/[a-z0-9]+\.supabase\.co$/i.test(url);
+}
+
 function getDataDir() {
     if (process.env.DATA_DIR) return process.env.DATA_DIR;
     if (IS_SERVERLESS) return os.tmpdir();
@@ -101,9 +115,17 @@ let supabase = null;
 function getSupabase() {
     if (!supabase) {
         const { createClient } = require('@supabase/supabase-js');
+        const ws = require('ws');
+        const url = getSupabaseUrl();
+        if (!isValidSupabaseUrl(url)) {
+            throw new Error(
+                'Invalid SUPABASE_URL. Use https://YOUR_PROJECT_REF.supabase.co (not the dashboard URL).'
+            );
+        }
         supabase = createClient(
-            process.env.SUPABASE_URL,
-            process.env.SUPABASE_SERVICE_ROLE_KEY
+            url,
+            process.env.SUPABASE_SERVICE_ROLE_KEY,
+            { realtime: { transport: ws } }
         );
     }
     return supabase;
@@ -326,9 +348,11 @@ async function initDb() {
 }
 
 function getStorageInfo() {
+    const url = getSupabaseUrl();
     return {
         storage: USE_SUPABASE ? 'supabase' : 'excel',
-        persistent: USE_SUPABASE,
+        persistent: USE_SUPABASE && isValidSupabaseUrl(url),
+        supabaseUrl: USE_SUPABASE ? url : null,
         excelFile: USE_SUPABASE ? null : EXCEL_FILE
     };
 }
