@@ -1,6 +1,5 @@
  const express = require('express');
 const cors = require('cors');
-const ExcelJS = require('exceljs');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -13,6 +12,10 @@ const EXCEL_FILE = IS_SERVERLESS
     ? path.join(os.tmpdir(), 'tasks.xlsx')
     : path.join(__dirname, 'tasks.xlsx');
 
+function getExcelJS() {
+    return require('exceljs');
+}
+
 let excelReady = null;
 function ensureExcel() {
     if (!excelReady) excelReady = initExcel();
@@ -21,7 +24,9 @@ function ensureExcel() {
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+if (!IS_SERVERLESS) {
+    app.use(express.static(path.join(__dirname, 'public')));
+}
 
 const COLUMNS = [
     { header: 'ID',           key: 'id',          width: 16 },
@@ -73,6 +78,7 @@ async function saveWorkbook(workbook) {
 }
 
 async function loadWorkbook() {
+    const ExcelJS = getExcelJS();
     const workbook = new ExcelJS.Workbook();
     if (IS_SERVERLESS) {
         const data = await fs.promises.readFile(EXCEL_FILE);
@@ -85,6 +91,7 @@ async function loadWorkbook() {
 
 async function initExcel() {
     if (!fs.existsSync(EXCEL_FILE)) {
+        const ExcelJS = getExcelJS();
         const workbook = new ExcelJS.Workbook();
         const sheet = workbook.addWorksheet('Tasks');
         sheet.columns = COLUMNS;
