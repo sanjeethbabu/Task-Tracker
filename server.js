@@ -1,6 +1,10 @@
-const express = require('express');
+ const express = require('express');
 const cors = require('cors');
 const path = require('path');
+
+if (!process.env.VERCEL) {
+    require('dotenv').config();
+}
 const db = require('./db');
 
 const app = express();
