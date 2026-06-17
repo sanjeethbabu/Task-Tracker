@@ -6,7 +6,16 @@ const fs = require('fs');
 
 const app = express();
 const port = process.env.PORT || 3000;
-const EXCEL_FILE = path.join(__dirname, 'tasks.xlsx');
+// Vercel serverless only allows writes under /tmp
+const EXCEL_FILE = process.env.VERCEL
+    ? path.join('/tmp', 'tasks.xlsx')
+    : path.join(__dirname, 'tasks.xlsx');
+
+let excelReady = null;
+function ensureExcel() {
+    if (!excelReady) excelReady = initExcel();
+    return excelReady;
+}
 
 app.use(cors());
 app.use(express.json());
@@ -68,6 +77,7 @@ function normalizeTaskText(text) {
 }
 
 async function getTaskSheet() {
+    await ensureExcel();
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(EXCEL_FILE);
     const sheet = workbook.getWorksheet('Tasks');
@@ -212,8 +222,15 @@ app.delete('/api/tasks/:id', async (req, res) => {
     }
 });
 
-initExcel().then(() => {
-    app.listen(port, () => {
-        console.log(`Server running at http://localhost:${port}`);
+module.exports = app;
+
+if (!process.env.VERCEL) {
+    ensureExcel().then(() => {
+        app.listen(port, () => {
+            console.log(`Server running at http://localhost:${port}`);
+        });
+    }).catch((err) => {
+        console.error('Failed to start server:', err);
+        process.exit(1);
     });
-});
+}
