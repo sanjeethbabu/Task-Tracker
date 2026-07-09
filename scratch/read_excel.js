@@ -1,4 +1,4 @@
-const ExcelJS = require('exceljs);
+const ExcelJS = require('exceljs');
 const path = require('path');
 const fs = require('fs');
 
