@@ -81,9 +81,43 @@ body {
     margin: 0 auto;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
     padding: 0 24px;
     height: 62px;
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.ci-link {
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: rgba(139,92,246,0.1);
+    border: 1px solid rgba(139,92,246,0.2);
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.ci-link:hover {
+    background: rgba(139,92,246,0.2);
+    border-color: rgba(139,92,246,0.4);
+    color: var(--text-main);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(139,92,246,0.3);
+}
+
+.ci-link i {
+    font-size: 0.85rem;
 }
 
 .nav-brand {

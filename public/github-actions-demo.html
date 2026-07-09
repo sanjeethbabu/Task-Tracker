@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg?v=2">
+    <title>TicTrack - GitHub Actions Explained</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #8b5cf6;
+            --primary-glow: #8b5cf680;
+            --secondary: #ec4899;
+            --bg-dark: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --success: #22c55e;
+            --border: rgba(255, 255, 255, 0.1);
+            --glass: blur(12px);
+            --warning: #f59e0b;
+            --info: #3b82f6;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; }
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .background-blobs {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; overflow: hidden;
+        }
+        .blob {
+            position: absolute; width: 600px; height: 600px; border-radius: 50%;
+            filter: blur(80px); opacity: 0.15;
+            animation: move 20s infinite alternate;
+        }
+        .blob-1 { background: var(--primary); top: -10%; left: -10%; }
+        .blob-2 { background: var(--secondary); bottom: -10%; right: -10%; animation-delay: -5s; }
+        .blob-3 { background: #3b82f6; top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -10s; }
+
+        @keyframes move {
+            from { transform: translate(0, 0) scale(1); }
+            to { transform: translate(100px, 100px) scale(1.1); }
+        }
+
+        .top-nav {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(139, 92, 246, 0.22);
+            position: sticky;
+            top: 0;
+            z-index: 200;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+        }
+        .nav-inner {
+            max-width: 1280px; margin: 0 auto;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 24px; height: 62px;
+        }
+        .nav-brand {
+            display: flex; align-items: center; gap: 13px;
+        }
+        .nav-icon {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 14px rgba(139, 92, 246, 0.45); flex-shrink: 0;
+        }
+        .nav-icon i { font-size: 0.95rem; color: white; }
+        .nav-text { display: flex; flex-direction: column; line-height: 1.2; }
+        .nav-title {
+            font-size: 1.3rem; font-weight: 800;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+        .nav-title-white {
+            background: none; -webkit-background-clip: unset;
+            -webkit-text-fill-color: #ffffff; color: #ffffff;
+        }
+        .nav-tagline {
+            font-size: 0.65rem; color: var(--text-dim);
+            font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase;
+        }
+        .nav-links {
+            display: flex; align-items: center; gap: 16px;
+        }
+        .nav-links a {
+            color: var(--text-dim); text-decoration: none; font-size: 0.85rem;
+            font-weight: 600; transition: color 0.2s;
+        }
+        .nav-links a:hover { color: var(--text-main); }
+        .nav-links a i { margin-right: 6px; }
+
+        .container {
+            max-width: 1100px; width: 100%; padding: 40px 24px 20px; flex: 1;
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center; margin-bottom: 50px;
+        }
+        .hero h1 {
+            font-size: 3.2rem; font-weight: 800; letter-spacing: -1px;
+            background: linear-gradient(45deg, var(--primary), var(--secondary), #3b82f6);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            margin-bottom: 12px;
+        }
+        .hero p {
+            font-size: 1.15rem; color: var(--text-dim);
+            max-width: 700px; margin: 0 auto; line-height: 1.7;
+        }
+        .hero .demo-tag {
+            display: inline-block;
+            background: rgba(139,92,246,0.15); color: var(--primary);
+            padding: 6px 16px; border-radius: 999px; font-size: 0.8rem;
+            font-weight: 700; margin-bottom: 16px;
+            border: 1px solid rgba(139,92,246,0.25);
+        }
+
+        /* Section Cards */
+        .section { margin-bottom: 40px; }
+        .section-title {
+            font-size: 1.6rem; font-weight: 800; margin-bottom: 20px;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .section-title i {
+            font-size: 1.5rem; color: var(--primary);
+            background: rgba(139,92,246,0.1); padding: 8px;
+            border-radius: 12px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 28px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+            margin-bottom: 20px;
+        }
+        .card h3 {
+            font-size: 1.1rem; font-weight: 700; margin-bottom: 10px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .card h3 i { color: var(--primary); }
+        .card p { color: var(--text-dim); line-height: 1.7; font-size: 0.95rem; }
+        .card p + p { margin-top: 10px; }
+
+        .highlight {
+            color: var(--primary); font-weight: 600;
+        }
+
+        /* Why Cards Grid */
+        .why-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 16px;
+        }
+        .why-card {
+            background: var(--card-bg);
+            backdrop-filter: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            transition: transform 0.3s ease, border-color 0.3s;
+        }
+        .why-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(139,92,246,0.4);
+        }
+        .why-card .icon {
+            width: 52px; height: 52px; border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 14px; font-size: 1.3rem;
+        }
+        .why-card .icon.purple { background: rgba(139,92,246,0.15); color: var(--primary); }
+        .why-card .icon.pink { background: rgba(236,72,153,0.15); color: var(--secondary); }
+        .why-card .icon.green { background: rgba(34,197,94,0.15); color: var(--success); }
+        .why-card .icon.blue { background: rgba(59,130,246,0.15); color: var(--info); }
+        .why-card .icon.orange { background: rgba(245,158,11,0.15); color: var(--warning); }
+        .why-card h4 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+        .why-card p { font-size: 0.85rem; color: var(--text-dim); line-height: 1.6; }
+
+        /* Pipeline */
+        .pipeline {
+            display: flex; align-items: center; justify-content: center;
+            flex-wrap: wrap; gap: 8px; padding: 20px 0;
+        }
+        .pipe-node {
+            display: flex; flex-direction: column; align-items: center;
+            gap: 8px; cursor: pointer; position: relative;
+        }
+        .pipe-node .node-circle {
+            width: 64px; height: 64px; border-radius: 50%;
+            background: rgba(30,41,59,0.9);
+            border: 2px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; color: var(--text-dim);
+            transition: all 0.3s ease; position: relative;
+        }
+        .pipe-node.active .node-circle {
+            border-color: var(--primary);
+            color: var(--primary);
+            box-shadow: 0 0 20px var(--primary-glow);
+            animation: pulse-node 2s ease-in-out infinite;
+        }
+        .pipe-node.done .node-circle {
+            border-color: var(--success);
+            color: var(--success);
+            background: rgba(34,197,94,0.1);
+        }
+        @keyframes pulse-node {
+            0%, 100% { box-shadow: 0 0 10px var(--primary-glow); }
+            50% { box-shadow: 0 0 30px var(--primary-glow), 0 0 60px rgba(139,92,246,0.2); }
+        }
+        .pipe-node .node-label {
+            font-size: 0.7rem; font-weight: 600; color: var(--text-dim);
+            text-align: center; max-width: 80px; line-height: 1.2;
+        }
+        .pipe-arrow {
+            font-size: 1.2rem; color: var(--text-dim); opacity: 0.5;
+        }
+
+        .pipeline-progress-track {
+            margin-top: 10px; text-align: center;
+        }
+        .pipeline-status {
+            display: inline-block;
+            padding: 6px 18px; border-radius: 999px;
+            font-size: 0.85rem; font-weight: 700;
+            background: rgba(34,197,94,0.1);
+            border: 1px solid rgba(34,197,94,0.25);
+            color: var(--success);
+        }
+        .pipeline-controls { text-align: center; margin: 16px 0; }
+        .pipe-btn {
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            border: none; color: white; padding: 10px 24px;
+            border-radius: 12px; font-weight: 700; font-size: 0.9rem;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .pipe-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(139,92,246,0.4); }
+        .pipe-btn:active { transform: translateY(0); }
+        .pipe-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .pipe-step-detail {
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--border);
+            border-radius: 14px; padding: 18px;
+            margin-top: 16px; min-height: 60px;
+        }
+        .pipe-step-detail h4 {
+            font-size: 0.95rem; margin-bottom: 6px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .pipe-step-detail p { font-size: 0.85rem; color: var(--text-dim); line-height: 1.6; }
+        .pipe-step-detail code {
+            background: rgba(139,92,246,0.1); color: var(--primary);
+            padding: 2px 8px; border-radius: 4px; font-size: 0.85rem;
+        }
+
+        /* Workflow Tabs */
+        .workflow-tabs {
+            display: flex; gap: 6px; margin-bottom: 20px;
+            padding: 5px; background: var(--card-bg);
+            backdrop-filter: var(--glass); border: 1px solid var(--border);
+            border-radius: 14px; width: fit-content;
+        }
+        .wf-tab {
+            background: transparent; border: none;
+            padding: 10px 22px; border-radius: 10px;
+            color: var(--text-dim); font-size: 0.9rem;
+            font-weight: 600; cursor: pointer;
+            transition: all 0.2s; white-space: nowrap;
+        }
+        .wf-tab.active {
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: white; box-shadow: 0 6px 18px rgba(139,92,246,0.35);
+            font-weight: 700;
+        }
+        .wf-tab:hover:not(.active) { background: rgba(255,255,255,0.05); color: #e2e8f0; }
+
+        .code-block {
+            background: #1a1a2e; border: 1px solid var(--border);
+            border-radius: 14px; padding: 20px;
+            font-family: 'Courier New', monospace; font-size: 0.85rem;
+            line-height: 1.6; overflow-x: auto; color: #e2e8f0;
+        }
+        .code-block .comment { color: #6b7280; }
+        .code-block .key { color: #93c5fd; }
+        .code-block .string { color: #86efac; }
+        .code-block .bool { color: #f9a8d4; }
+        .code-block .number { color: #fdba74; }
+        .code-block .punctuation { color: #e2e8f0; }
+
+        /* Workflow Explanation */
+        .wf-explanation { margin-top: 20px; }
+        .wf-step {
+            display: flex; align-items: flex-start; gap: 14px;
+            padding: 14px 0; border-bottom: 1px solid var(--border);
+        }
+        .wf-step:last-child { border-bottom: none; }
+        .wf-step .step-num {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: rgba(139,92,246,0.15); color: var(--primary);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 0.85rem; flex-shrink: 0;
+        }
+        .wf-step .step-content h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; }
+        .wf-step .step-content p { font-size: 0.85rem; color: var(--text-dim); line-height: 1.6; }
+
+        /* Benefits list in demo context */
+        .benefit-list { list-style: none; }
+        .benefit-list li {
+            display: flex; align-items: flex-start; gap: 12px;
+            padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .benefit-list li:last-child { border-bottom: none; }
+        .benefit-list li i {
+            margin-top: 3px; width: 20px; text-align: center;
+        }
+        .benefit-list li .benefit-text h4 { font-size: 0.95rem; font-weight: 700; }
+        .benefit-list li .benefit-text p { font-size: 0.85rem; color: var(--text-dim); }
+
+        /* Comparison / Before-After */
+        .compare-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .compare-box {
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--border);
+            border-radius: 14px; padding: 20px;
+        }
+        .compare-box h4 {
+            font-size: 0.9rem; font-weight: 700; margin-bottom: 10px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .compare-box h4 .badge {
+            font-size: 0.65rem; padding: 2px 8px; border-radius: 999px;
+            font-weight: 700;
+        }
+        .badge.bad { background: rgba(239,68,68,0.15); color: #ef4444; }
+        .badge.good { background: rgba(34,197,94,0.15); color: var(--success); }
+        .compare-box ul { list-style: none; }
+        .compare-box ul li {
+            font-size: 0.85rem; color: var(--text-dim);
+            padding: 6px 0; display: flex; align-items: center; gap: 8px;
+        }
+        .compare-box ul li i.fa-times { color: #ef4444; }
+        .compare-box ul li i.fa-check { color: var(--success); }
+
+        /* Diagram illustration */
+        .diagram-flow {
+            display: flex; flex-direction: column; gap: 6px;
+            padding: 16px 0; position: relative;
+        }
+        .diagram-flow .df-row {
+            display: flex; align-items: center; gap: 12px;
+        }
+        .diagram-flow .df-icon {
+            width: 40px; height: 40px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; flex-shrink: 0;
+        }
+        .diagram-flow .df-icon.event { background: rgba(245,158,11,0.15); color: var(--warning); }
+        .diagram-flow .df-icon.action { background: rgba(139,92,246,0.15); color: var(--primary); }
+        .diagram-flow .df-icon.result { background: rgba(34,197,94,0.15); color: var(--success); }
+        .diagram-flow .df-icon.fail { background: rgba(239,68,68,0.15); color: #ef4444; }
+        .diagram-flow .df-line {
+            width: 2px; height: 16px; background: var(--border);
+            margin-left: 19px;
+        }
+
+        .footnote {
+            text-align: center; color: var(--text-dim);
+            font-size: 0.8rem; padding: 20px 0;
+            border-top: 1px solid var(--border); margin-top: 20px;
+        }
+        .footnote a { color: var(--primary); text-decoration: none; font-weight: 600; }
+        .footnote a:hover { text-decoration: underline; }
+
+        hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+
+        @media (max-width: 768px) {
+            .container { padding: 20px 16px; }
+            .hero h1 { font-size: 2rem; }
+            .hero p { font-size: 0.95rem; }
+            .compare-grid { grid-template-columns: 1fr; }
+            .pipeline { gap: 4px; }
+            .pipe-node .node-circle { width: 48px; height: 48px; font-size: 1rem; }
+            .pipe-node .node-label { font-size: 0.6rem; max-width: 60px; }
+            .pipe-arrow { font-size: 0.8rem; }
+            .why-grid { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 500px) {
+            .why-grid { grid-template-columns: 1fr; }
+            .nav-links { display: none; }
+            .workflow-tabs { flex-direction: column; width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <header class="top-nav">
+        <div class="nav-inner">
+            <div class="nav-brand">
+                <div class="nav-icon"><i class="fas fa-check-double"></i></div>
+                <div class="nav-text">
+                    <span class="nav-title"><span class="nav-title-white">Tick</span> Track</span>
+                    <span class="nav-tagline">GitHub Actions → Docker → Kubernetes</span>
+                </div>
+            </div>
+            <div class="nav-links">
+                <a href="index.html"><i class="fas fa-arrow-left"></i> Back to App</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Hero -->
+        <section class="hero">
+            <span class="demo-tag"><i class="fas fa-code-branch"></i> Using TicTrack as a Demo Project</span>
+            <h1>What is GitHub Actions?</h1>
+            <p>
+                GitHub Actions is an automation platform that lets you 
+                <span class="highlight">build, test, and deploy</span> your code 
+                directly from your GitHub repository. Think of it as a robot that 
+                runs your checklist every time you push code — catching bugs, 
+                running tests, and ensuring nothing breaks.
+            </p>
+        </section>
+
+        <!-- Why GitHub Actions -->
+        <section class="section">
+            <h2 class="section-title"><i class="fas fa-question-circle"></i> Why GitHub Actions?</h2>
+            <div class="why-grid">
+                <div class="why-card">
+                    <div class="icon purple"><i class="fas fa-shield-alt"></i></div>
+                    <h4>Automatic Quality Checks</h4>
+                    <p>Every push automatically runs tests. If something breaks, you know immediately — not after it reaches users.</p>
+                </div>
+                <div class="why-card">
+                    <div class="icon pink"><i class="fas fa-clock"></i></div>
+                    <h4>Saves Developer Time</h4>
+                    <p>No more manually running tests or deployments. The robot handles it while you focus on building features.</p>
+                </div>
+                <div class="why-card">
+                    <div class="icon green"><i class="fas fa-layer-group"></i></div>
+                    <h4>Multi-Version Testing</h4>
+                    <p>Test your code against multiple Node.js versions (18.x, 20.x, 22.x) simultaneously — ensuring compatibility.</p>
+                </div>
+                <div class="why-card">
+                    <div class="icon blue"><i class="fas fa-rocket"></i></div>
+                    <h4>Deploy With Confidence</h4>
+                    <p>Passing CI checks mean every deploy is backed by verified tests. No more "it works on my machine."</p>
+                </div>
+                <div class="why-card">
+                    <div class="icon orange"><i class="fas fa-bell"></i></div>
+                    <h4>Instant Feedback</h4>
+                    <p>Pull requests show check statuses directly. Reviewers see green checks before merging — catching issues early.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Interactive Pipeline -->
+        <section class="section">
+            <h2 class="section-title"><i class="fas fa-cogs"></i> The CI/CD Pipeline — Live</h2>
+            <div class="card">
+                <p style="margin-bottom: 12px;">
+                    This is what happens every time you push code to this project. Click <strong>"Run Pipeline"</strong> to see it in action.
+                </p>
+
+                <div class="pipeline" id="pipeline">
+                    <div class="pipe-node" data-step="0">
+                        <div class="node-circle"><i class="fas fa-code-branch"></i></div>
+                        <div class="node-label">Trigger</div>
+                    </div>
+                    <div class="pipe-arrow"><i class="fas fa-chevron-right"></i></div>
+                    <div class="pipe-node" data-step="1">
+                        <div class="node-circle"><i class="fas fa-download"></i></div>
+                        <div class="node-label">Checkout Code</div>
+                    </div>
+                    <div class="pipe-arrow"><i class="fas fa-chevron-right"></i></div>
+                    <div class="pipe-node" data-step="2">
+                        <div class="node-circle"><i class="fab fa-node-js"></i></div>
+                        <div class="node-label">Setup Node.js</div>
+                    </div>
+                    <div class="pipe-arrow"><i class="fas fa-chevron-right"></i></div>
+                    <div class="pipe-node" data-step="3">
+                        <div class="node-circle"><i class="fas fa-box"></i></div>
+                        <div class="node-label">Install Deps</div>
+                    </div>
+                    <div class="pipe-arrow"><i class="fas fa-chevron-right"></i></div>
+                    <div class="pipe-node" data-step="4">
+                        <div class="node-circle"><i class="fas fa-vial"></i></div>
+                        <div class="node-label">Run Tests</div>
+                    </div>
+                    <div class="pipe-arrow"><i class="fas fa-chevron-right"></i></div>
+                    <div class="pipe-node" data-step="5">
+                        <div class="node-circle"><i class="fas fa-globe"></i></div>
+                        <div class="node-label">Verify App</div>
+                    </div>
+                </div>
+
+                <div class="pipeline-status" id="pipelineStatus">Ready</div>
+
+                <div class="pipeline-controls">
+                    <button class="pipe-btn" id="pipeRunBtn" onclick="runPipeline()"><i class="fas fa-play"></i> Run Pipeline</button>
+                    <button class="pipe-btn" onclick="resetPipeline()" style="background:rgba(255,255,255,0.1);margin-left:8px;"><i class="fas fa-redo"></i> Reset</button>
+                </div>
+
+                <div class="pipe-step-detail" id="stepDetail">
+                    <h4><i class="fas fa-info-circle" style="color:var(--text-dim);"></i> Click "Run Pipeline" to start</h4>
+                    <p>Each stage will light up with a description of what's happening.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- This Project's Workflows -->
+        <section class="section">
+            <h2 class="section-title"><i class="fas fa-file-code"></i> This Project's Workflows</h2>
+            <p style="color:var(--text-dim);margin-bottom:16px;">
+                This project has <span class="highlight">two</span> GitHub Actions workflows. Switch between them below.
+            </p>
+
+            <div class="workflow-tabs" id="wfTabs">
+                <button class="wf-tab active" onclick="switchWF('todo')">todo.yml</button>
+                <button class="wf-tab" onclick="switchWF('nodeci')">node.js.yml</button>
+            </div>
+
+            <!-- todo.yml view -->
+            <div id="wf-todo" class="wf-view">
+                <div class="code-block">
+                    <span class="key">name</span>: <span class="string">Todo</span><br>
+                    <span class="key">on</span>:<br>
+                    &nbsp;&nbsp;<span class="key">push</span>:<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">branches</span>: [ <span class="string">"main"</span> ]<br>
+                    &nbsp;&nbsp;<span class="key">pull_request</span>:<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">branches</span>: [ <span class="string">"main"</span> ]<br><br>
+                    <span class="key">jobs</span>:<br>
+                    &nbsp;&nbsp;<span class="key">build</span>:<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">runs-on</span>: <span class="string">ubuntu-latest</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">strategy</span>:<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">matrix</span>:<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">node-version</span>: [<span class="number">22.x</span>]<br><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">steps</span>:<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;- <span class="key">uses</span>: <span class="string">actions/checkout@v4</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;- <span class="key">name</span>: <span class="string">Use Node.js $&#123;&#123; matrix.node-version &#125;&#125;</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">uses</span>: <span class="string">actions/setup-node@v4</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">with</span>:<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">node-version</span>: $&#123;&#123; matrix.node-version &#125;&#125;<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">cache</span>: <span class="string">'npm'</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;- <span class="key">name</span>: <span class="string">Install dependencies</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">run</span>: <span class="string">npm ci</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;- <span class="key">name</span>: <span class="string">Run tests</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">run</span>: <span class="string">npm test --if-present</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;- <span class="key">name</span>: <span class="string">Start application and verify visibility</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">run</span>: <span class="string">|</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="string">npm run dev &</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="string">npx wait-on http://localhost:3000 --timeout 30000</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="string">curl -f http://localhost:3000</span>
+                </div>
+
+                <div class="wf-explanation">
+                    <div class="wf-step">
+                        <div class="step-num">1</div>
+                        <div class="step-content">
+                            <h4>Trigger</h4>
+                            <p>Runs on every <code>push</code> or <code>pull_request</code> to the <code>main</code> branch. This protects the production branch from broken code.</p>
+                        </div>
+                    </div>
+                    <div class="wf-step">
+                        <div class="step-num">2</div>
+                        <div class="step-content">
+                            <h4>Environment &amp; Dependencies</h4>
+                            <p>Runs on <code>ubuntu-latest</code> with Node.js <strong>22.x</strong>. Installs deps via <code>npm ci</code> (clean install) with <code>cache: 'npm'</code> for faster runs.</p>
+                        </div>
+                    </div>
+                    <div class="wf-step">
+                        <div class="step-num">3</div>
+                        <div class="step-content">
+                            <h4>Test &amp; Verify</h4>
+                            <p>Runs <code>npm test</code> (if any tests exist). Then starts the dev server, waits for port 3000, and <code>curl</code>s it to confirm the app is actually serving requests.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- node.js.yml view -->
+            <div id="wf-nodeci" class="wf-view" style="display:none;">
+                <div class="code-block">
+                    <span class="comment"># This workflow will do a clean installation of node dependencies,</span><br>
+                    <span class="comment"># cache/restore them, build the source code and run tests</span><br>
+                    <span class="comment"># across different versions of node</span><br><br>
+                    <span class="key">name</span>: <span class="string">Node.js CI</span><br><br>
+                    <span class="key">on</span>:<br>
+                    &nbsp;&nbsp;<span class="key">push</span>:<br>
+                    &nbsp;&nbsp;<span class="key">pull_request</span>:<br><br>
+                    <span class="key">jobs</span>:<br>
+                    &nbsp;&nbsp;<span class="key">build</span>:<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">runs-on</span>: <span class="string">ubuntu-latest</span><br><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">strategy</span>:<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">matrix</span>:<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">node-version</span>: [<span class="number">18.x</span>, <span class="number">20.x</span>, <span class="number">22.x</span>]<br><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">steps</span>:<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;- <span class="key">uses</span>: <span class="string">actions/checkout@v4</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;- <span class="key">name</span>: <span class="string">Use Node.js $&#123;&#123; matrix.node-version &#125;&#125;</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">uses</span>: <span class="string">actions/setup-node@v4</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">with</span>:<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">node-version</span>: $&#123;&#123; matrix.node-version &#125;&#125;<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">cache</span>: <span class="string">'npm'</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;- <span class="key">name</span>: <span class="string">Install dependencies</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">run</span>: <span class="string">npm ci</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;- <span class="key">name</span>: <span class="string">Build source code</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">run</span>: <span class="string">npm run build --if-present</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;- <span class="key">name</span>: <span class="string">Run tests</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">run</span>: <span class="string">npm test</span>
+                </div>
+
+                <div class="wf-explanation">
+                    <div class="wf-step">
+                        <div class="step-num">1</div>
+                        <div class="step-content">
+                            <h4>Broader Triggers</h4>
+                            <p>Triggers on <strong>any</strong> push or pull request (any branch). This catches issues early, even in feature branches.</p>
+                        </div>
+                    </div>
+                    <div class="wf-step">
+                        <div class="step-num">2</div>
+                        <div class="step-content">
+                            <h4>Matrix Testing</h4>
+                            <p>Tests across <strong>three</strong> Node.js versions (18.x, 20.x, 22.x) in parallel. This ensures the app works across all supported runtimes.</p>
+                        </div>
+                    </div>
+                    <div class="wf-step">
+                        <div class="step-num">3</div>
+                        <div class="step-content">
+                            <h4>Build &amp; Test</h4>
+                            <p>Runs <code>npm run build --if-present</code> (build if a build script exists) and <code>npm test</code> to validate everything compiles and passes.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- How It Helps This Project -->
+        <section class="section">
+            <h2 class="section-title"><i class="fas fa-tasks"></i> How CI/CD Helps TicTrack</h2>
+            <div class="card">
+                <h3><i class="fas fa-project-diagram"></i> Before GitHub Actions</h3>
+                <div class="compare-grid" style="margin-top:12px;">
+                    <div class="compare-box">
+                        <h4><i class="fas fa-exclamation-triangle" style="color:#ef4444;"></i> Without CI <span class="badge bad">Risky</span></h4>
+                        <ul>
+                            <li><i class="fas fa-times"></i> Manually run <code>npm test</code> before each push</li>
+                            <li><i class="fas fa-times"></i> No way to test on all Node.js versions</li>
+                            <li><i class="fas fa-times"></i> Easy to forget testing before deploying</li>
+                            <li><i class="fas fa-times"></i> PR reviewers can't see if code passes tests</li>
+                            <li><i class="fas fa-times"></i> Broken code can reach production</li>
+                        </ul>
+                    </div>
+                    <div class="compare-box">
+                        <h4><i class="fas fa-check-circle" style="color:var(--success);"></i> With CI <span class="badge good">Safe</span></h4>
+                        <ul>
+                            <li><i class="fas fa-check"></i> Tests run <strong>automatically</strong> on every push</li>
+                            <li><i class="fas fa-check"></i> Matrix runs on 18.x, 20.x, 22.x simultaneously</li>
+                            <li><i class="fas fa-check"></i> Zero manual effort — push &amp; forget</li>
+                            <li><i class="fas fa-check"></i> Green checkmarks on every PR</li>
+                            <li><i class="fas fa-check"></i> Failed tests block broken deploys</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3><i class="fas fa-heartbeat"></i> What Gets Checked — In Context</h3>
+                <ul class="benefit-list">
+                    <li>
+                        <i class="fas fa-check-circle" style="color:var(--success);"></i>
+                        <div class="benefit-text">
+                            <h4>Dependencies aren't broken</h4>
+                            <p><code>npm ci</code> installs exactly what's in <code>package-lock.json</code>. If a dependency is missing or incompatible, the pipeline fails.</p>
+                        </div>
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle" style="color:var(--success);"></i>
+                        <div class="benefit-text">
+                            <h4>Tests pass before merge</h4>
+                            <p><code>npm test</code> runs all tests. For TicTrack, this means the API endpoints, Excel operations, and task management logic are verified.</p>
+                        </div>
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle" style="color:var(--success);"></i>
+                        <div class="benefit-text">
+                            <h4>App boots correctly</h4>
+                            <p>The <code>todo.yml</code> workflow starts the dev server and <code>curl</code>s it. If the Express server crashes on startup, the pipeline catches it.</p>
+                        </div>
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle" style="color:var(--success);"></i>
+                        <div class="benefit-text">
+                            <h4>Multiple Node versions work</h4>
+                            <p><code>node.js.yml</code> tests on 18.x, 20.x, 22.x. If someone deploys on Node 22 but users run 18, the matrix catches the mismatch.</p>
+                        </div>
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle" style="color:var(--success);"></i>
+                        <div class="benefit-text">
+                            <h4>Deployment confidence</h4>
+                            <p>Combined with Vercel &amp; Render configs (see <code>vercel.json</code> and <code>render.yaml</code>), passing CI means you can deploy with one click.</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h3><i class="fas fa-sitemap"></i> The Full Picture</h3>
+                <p>Here's how the pieces connect for this project:</p>
+                <div class="diagram-flow">
+                    <div class="df-row">
+                        <div class="df-icon event"><i class="fas fa-code-branch"></i></div>
+                        <div><strong>You push code</strong> to <code>main</code> (or open a PR)</div>
+                    </div>
+                    <div class="df-line"></div>
+                    <div class="df-row">
+                        <div class="df-icon event"><i class="fab fa-github"></i></div>
+                        <div><strong>GitHub detects the event</strong> and triggers both workflows</div>
+                    </div>
+                    <div class="df-line"></div>
+                    <div class="df-row">
+                        <div class="df-icon action"><i class="fas fa-cogs"></i></div>
+                        <div><strong>Workflow runs on Ubuntu</strong> with Node.js (22.x for todo.yml; 18.x/20.x/22.x for node.js.yml)</div>
+                    </div>
+                    <div class="df-line"></div>
+                    <div class="df-row">
+                        <div class="df-icon action"><i class="fas fa-check-double"></i></div>
+                        <div><strong>Steps execute:</strong> Checkout → Setup Node → Install deps → Build → Test → Verify</div>
+                    </div>
+                    <div class="df-line"></div>
+                    <div class="df-row">
+                        <div class="df-icon result"><i class="fas fa-check-circle"></i></div>
+                        <div><strong>All green ✓</strong> — Code is safe to merge/deploy</div>
+                    </div>
+                    <div class="df-line" style="display:none;" id="failLine"></div>
+                    <div class="df-row" style="display:none;" id="failRow">
+                        <div class="df-icon fail"><i class="fas fa-times-circle"></i></div>
+                        <div><strong>Pipeline fails</strong> — You get notified immediately to fix the issue</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Docker + Jenkins comparison cards -->
+        <section class="section">
+            <div class="card">
+                <h3><i class="fab fa-docker"></i> Can We Use Docker in GitHub Actions? Absolutely</h3>
+                <p>
+                    Docker and GitHub Actions are <span class="highlight">not alternatives</span> — they solve different problems. 
+                    GitHub Actions is the <strong>automation engine</strong>, Docker is the <strong>packaging format</strong>. 
+                    You can (and often do) use Docker <em>inside</em> GitHub Actions:
+                </p>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px;">
+                    <div class="compare-box">
+                        <h4><i class="fas fa-cogs" style="color:var(--primary);"></i> Without Docker in CI</h4>
+                        <ul>
+                            <li><i class="fas fa-check" style="color:var(--success);"></i> <code>npm ci</code> installs deps directly on Ubuntu runner</li>
+                            <li><i class="fas fa-check" style="color:var(--success);"></i> Runs <code>npm test</code> with the system Node.js</li>
+                            <li><i class="fas fa-check" style="color:var(--success);"></i> Works fine for simple Node.js apps</li>
+                        </ul>
+                        <p style="margin-top:8px;font-size:0.8rem;color:var(--text-dim);">This is what TicTrack does today.</p>
+                    </div>
+                    <div class="compare-box">
+                        <h4><i class="fa-solid fa-ship" style="color:#0ea5e9;"></i> With Docker in CI</h4>
+                        <ul>
+                            <li><i class="fas fa-check" style="color:var(--success);"></i> <code>docker build</code> packages your app into an image</li>
+                            <li><i class="fas fa-check" style="color:var(--success);"></i> Tests run inside the container (same env as prod)</li>
+                            <li><i class="fas fa-check" style="color:var(--success);"></i> Same image deploys to staging &amp; production</li>
+                        </ul>
+                        <p style="margin-top:8px;font-size:0.8rem;color:var(--text-dim);">Needed when you have system deps or deploy to container runtimes.</p>
+                    </div>
+                </div>
+                <div style="margin-top:16px;padding:14px;background:rgba(139,92,246,0.08);border-radius:12px;border:1px solid rgba(139,92,246,0.15);">
+                    <p style="font-size:0.9rem;color:var(--text-main);"><i class="fas fa-lightbulb" style="color:var(--warning);"></i> <strong>Verdict for TicTrack:</strong> Docker is optional. The current setup (direct <code>npm ci</code> + <code>npm test</code> on Ubuntu) is perfectly adequate. You'd add Docker when you need to ship the app to Docker-based platforms or need exact environment parity.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3><i class="fab fa-github"></i> GitHub Actions vs Jenkins — Why We Chose GitHub</h3>
+                <p style="margin-bottom:14px;">
+                    Jenkins is a powerful, mature CI/CD server. But for a project like TicTrack, GitHub Actions is the better fit. Here's why:
+                </p>
+                <div class="compare-grid">
+                    <div class="compare-box">
+                        <h4><i class="fab fa-github" style="color:var(--primary);"></i> GitHub Actions</h4>
+                        <ul>
+                            <li><i class="fas fa-check" style="color:var(--success);"></i> <strong>Zero infrastructure</strong> — runs on GitHub's servers, no setup</li>
+                            <li><i class="fas fa-check" style="color:var(--success);"></i> <strong>Free for public repos</strong> — 2000 min/month for private</li>
+                            <li><i class="fas fa-check" style="color:var(--success);"></i> <strong>YAML in repo</strong> — config is version-controlled alongside code</li>
+                            <li><i class="fas fa-check" style="color:var(--success);"></i> <strong>Native GitHub integration</strong> — PR checks, status badges, auto-trigger</li>
+                            <li><i class="fas fa-check" style="color:var(--success);"></i> <strong>Marketplace ecosystem</strong> — 1000s of pre-built actions</li>
+                            <li><i class="fas fa-check" style="color:var(--success);"></i> <strong>No maintenance</strong> — no server to patch or plugins to update</li>
+                        </ul>
+                    </div>
+                    <div class="compare-box">
+                        <h4><i class="fab fa-jenkins" style="color:#d33833;"></i> Jenkins</h4>
+                        <ul>
+                            <li><i class="fas fa-times" style="color:#ef4444;"></i> Requires a server (or Docker container) to host</li>
+                            <li><i class="fas fa-times" style="color:#ef4444;"></i> Plugins need manual updates &amp; compatibility checks</li>
+                            <li><i class="fas fa-times" style="color:#ef4444;"></i> Pipeline config (Jenkinsfile/Groovy) is separate from repo</li>
+                            <li><i class="fas fa-check" style="color:var(--success);"></i> <strong>More flexible</strong> — custom plugins, complex pipelines, any OS/agent</li>
+                            <li><i class="fas fa-check" style="color:var(--success);"></i> <strong>Better for large enterprises</strong> — fine-grained access control, audit trails</li>
+                            <li><i class="fas fa-check" style="color:var(--success);"></i> <strong>Runs on your hardware</strong> — good for compliance/air-gapped environments</li>
+                        </ul>
+                    </div>
+                </div>
+                <div style="margin-top:16px;padding:14px;background:rgba(34,197,94,0.08);border-radius:12px;border:1px solid rgba(34,197,94,0.15);">
+                    <p style="font-size:0.9rem;color:var(--text-main);"><i class="fas fa-check-circle" style="color:var(--success);"></i> <strong>Bottom line:</strong> For a solo dev project hosted on GitHub, GitHub Actions is the obvious choice — zero setup, built-in integration, and does everything this project needs. Jenkins shines in enterprise environments with custom infrastructure, compliance requirements, or complex multi-platform builds.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── PHASE 2: Docker & Kubernetes ── -->
+        <section class="section" style="padding-top: 20px; border-top: 2px solid rgba(139,92,246,0.2);">
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;">
+                <span style="background:linear-gradient(45deg,var(--primary),var(--secondary));color:white;padding:4px 14px;border-radius:999px;font-size:0.75rem;font-weight:800;letter-spacing:0.05em;">PHASE 2</span>
+                <h2 class="section-title" style="margin-bottom:0;"><i class="fas fa-ship"></i> Containerization &amp; Orchestration</h2>
+            </div>
+            <p style="color:var(--text-dim);margin-bottom:28px;">
+                After CI validates your code, the next step is packaging it into a <span class="highlight">Docker container</span> 
+                and deploying it on <span class="highlight">Kubernetes</span>. Here's how this would work for TicTrack.
+            </p>
+
+            <!-- What is Docker -->
+            <div class="card">
+                <h3><i class="fab fa-docker"></i> What is Docker?</h3>
+                <p>
+                    Docker packages your application and all its dependencies into a lightweight, portable 
+                    <strong>container</strong>. A container includes your code, Node.js, all npm packages, 
+                    and configuration — so it runs identically on your laptop, a test server, or in production.
+                </p>
+                <p style="margin-top:10px;color:var(--text-main);font-weight:600;">For TicTrack, a <code>Dockerfile</code> would look like this:</p>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px;">
+                    <div class="code-block" style="font-size:0.8rem;">
+                        <span class="comment"># Use official Node.js 20 image</span><br>
+                        <span class="key">FROM</span> <span class="string">node:20-alpine</span><br><br>
+                        <span class="key">WORKDIR</span> <span class="string">/app</span><br><br>
+                        <span class="comment"># Copy package files &amp; install</span><br>
+                        <span class="key">COPY</span> <span class="string">package*.json</span> <span class="string">./</span><br>
+                        <span class="key">RUN</span> <span class="string">npm ci --only=production</span><br><br>
+                        <span class="comment"># Copy app source</span><br>
+                        <span class="key">COPY</span> <span class="string">.</span> <span class="string">.</span><br><br>
+                        <span class="comment"># Expose port &amp; start</span><br>
+                        <span class="key">EXPOSE</span> <span class="number">3000</span><br>
+                        <span class="key">CMD</span> [<span class="string">"node"</span>, <span class="string">"server.js"</span>]
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:10px;justify-content:center;">
+                        <div class="why-card" style="text-align:left;padding:16px;">
+                            <h4 style="font-size:0.85rem;"><i class="fas fa-box" style="color:var(--primary);"></i> Single Image</h4>
+                            <p style="font-size:0.8rem;">Everything your app needs in one package — Node 20, dependencies, code.</p>
+                        </div>
+                        <div class="why-card" style="text-align:left;padding:16px;">
+                            <h4 style="font-size:0.85rem;"><i class="fas fa-weight-hanging" style="color:var(--success);"></i> Lightweight</h4>
+                            <p style="font-size:0.8rem;">Alpine Linux base keeps the image under 150MB, much smaller than a full VM.</p>
+                        </div>
+                        <div class="why-card" style="text-align:left;padding:16px;">
+                            <h4 style="font-size:0.85rem;"><i class="fas fa-redo" style="color:var(--info);"></i> Reproducible</h4>
+                            <p style="font-size:0.8rem;">Same image runs everywhere — no more "it works on my machine" issues.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- What is Kubernetes -->
+            <div class="card">
+                <h3><i class="fas fa-dharmachakra"></i> What is Kubernetes (K8s)?</h3>
+                <p>
+                    Kubernetes is an orchestration platform that manages your containers at scale. It handles 
+                    <strong>deployment</strong>, <strong>scaling</strong>, <strong>load balancing</strong>, 
+                    <strong>self-healing</strong>, and <strong>rolling updates</strong> — so you don't have to.
+                </p>
+                <p style="margin-top:10px;color:var(--text-main);font-weight:600;">For TicTrack, the K8s manifests would be:</p>
+
+                <div class="workflow-tabs" style="margin-top:12px;">
+                    <button class="wf-tab active" onclick="switchK8s('deploy')" id="k8sDeployTab">Deployment.yaml</button>
+                    <button class="wf-tab" onclick="switchK8s('service')" id="k8sServiceTab">Service.yaml</button>
+                </div>
+
+                <div id="k8s-deploy" class="wf-view">
+                    <div class="code-block" style="font-size:0.8rem;">
+                        <span class="key">apiVersion</span>: <span class="string">apps/v1</span><br>
+                        <span class="key">kind</span>: <span class="string">Deployment</span><br>
+                        <span class="key">metadata</span>:<br>
+                        &nbsp;&nbsp;<span class="key">name</span>: <span class="string">tictrack-deployment</span><br>
+                        &nbsp;&nbsp;<span class="key">labels</span>:<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">app</span>: <span class="string">tictrack</span><br>
+                        <span class="key">spec</span>:<br>
+                        &nbsp;&nbsp;<span class="key">replicas</span>: <span class="number">3</span><br>
+                        &nbsp;&nbsp;<span class="key">selector</span>:<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">matchLabels</span>:<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">app</span>: <span class="string">tictrack</span><br>
+                        &nbsp;&nbsp;<span class="key">template</span>:<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">metadata</span>:<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">labels</span>:<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">app</span>: <span class="string">tictrack</span><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">spec</span>:<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">containers</span>:<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <span class="key">name</span>: <span class="string">tictrack</span><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">image</span>: <span class="string">ghcr.io/yourorg/tictrack:latest</span><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">ports</span>:<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <span class="key">containerPort</span>: <span class="number">3000</span><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">env</span>:<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <span class="key">name</span>: <span class="string">SUPABASE_URL</span><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">valueFrom</span>:<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">secretKeyRef</span>:<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">name</span>: <span class="string">tictrack-secrets</span><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">key</span>: <span class="string">supabase-url</span>
+                    </div>
+                    <div class="wf-explanation">
+                        <div class="wf-step">
+                            <div class="step-num">1</div>
+                            <div class="step-content">
+                                <h4>Declarative Desired State</h4>
+                                <p>You declare "I want 3 replicas running the <code>tictrack:latest</code> image." K8s ensures the cluster matches that state at all times.</p>
+                            </div>
+                        </div>
+                        <div class="wf-step">
+                            <div class="step-num">2</div>
+                            <div class="step-content">
+                                <h4>Self-Healing</h4>
+                                <p>If a pod crashes, Kubernetes automatically replaces it. If a node goes down, pods are rescheduled on healthy nodes.</p>
+                            </div>
+                        </div>
+                        <div class="wf-step">
+                            <div class="step-num">3</div>
+                            <div class="step-content">
+                                <h4>Secrets Management</h4>
+                                <p>Sensitive values like <code>SUPABASE_URL</code> are pulled from K8s Secrets — never baked into the image.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="k8s-service" class="wf-view" style="display:none;">
+                    <div class="code-block" style="font-size:0.8rem;">
+                        <span class="key">apiVersion</span>: <span class="string">v1</span><br>
+                        <span class="key">kind</span>: <span class="string">Service</span><br>
+                        <span class="key">metadata</span>:<br>
+                        &nbsp;&nbsp;<span class="key">name</span>: <span class="string">tictrack-service</span><br>
+                        <span class="key">spec</span>:<br>
+                        &nbsp;&nbsp;<span class="key">selector</span>:<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">app</span>: <span class="string">tictrack</span><br>
+                        &nbsp;&nbsp;<span class="key">ports</span>:<br>
+                        &nbsp;&nbsp;- <span class="key">protocol</span>: <span class="string">TCP</span><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">port</span>: <span class="number">80</span><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">targetPort</span>: <span class="number">3000</span><br>
+                        &nbsp;&nbsp;<span class="key">type</span>: <span class="string">LoadBalancer</span>
+                    </div>
+                    <div class="wf-explanation">
+                        <div class="wf-step">
+                            <div class="step-num">1</div>
+                            <div class="step-content">
+                                <h4>Stable Network Entry Point</h4>
+                                <p>The Service exposes your 3 pods under a single DNS name on port 80. Traffic is load-balanced across all replicas.</p>
+                            </div>
+                        </div>
+                        <div class="wf-step">
+                            <div class="step-num">2</div>
+                            <div class="step-content">
+                                <h4>Load Balancer</h4>
+                                <p><code>type: LoadBalancer</code> provisions a cloud load balancer (e.g. AWS ALB) that distributes incoming traffic to healthy pods.</p>
+                            </div>
+                        </div>
+                        <div class="wf-step">
+                            <div class="step-num">3</div>
+                            <div class="step-content">
+                                <h4>Service Discovery</h4>
+                                <p>Other services in the cluster can reach TicTrack via <code>http://tictrack-service</code> — no hardcoded IPs needed.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Docker + K8s Pipeline (Interactive) -->
+            <div class="card">
+                <h3><i class="fas fa-rocket"></i> The Full CI/CD Pipeline (with Docker + K8s)</h3>
+                <p style="margin-bottom:12px;">
+                    When you push to <code>main</code>, the full pipeline now includes building a Docker image, 
+                    pushing it to a registry, and deploying it to Kubernetes. Click <strong>"Run Full Pipeline"</strong> below.
+                </p>
+
+                <div class="pipeline" id="k8sPipeline">
+                    <div class="pipe-node" data-k8s-step="0">
+                        <div class="node-circle"><i class="fas fa-code-branch"></i></div>
+                        <div class="node-label">Code Push</div>
+                    </div>
+                    <div class="pipe-arrow"><i class="fas fa-chevron-right"></i></div>
+                    <div class="pipe-node" data-k8s-step="1">
+                        <div class="node-circle"><i class="fas fa-vial"></i></div>
+                        <div class="node-label">CI Tests</div>
+                    </div>
+                    <div class="pipe-arrow"><i class="fas fa-chevron-right"></i></div>
+                    <div class="pipe-node" data-k8s-step="2">
+                        <div class="node-circle"><i class="fab fa-docker"></i></div>
+                        <div class="node-label">Docker Build</div>
+                    </div>
+                    <div class="pipe-arrow"><i class="fas fa-chevron-right"></i></div>
+                    <div class="pipe-node" data-k8s-step="3">
+                        <div class="node-circle"><i class="fas fa-upload"></i></div>
+                        <div class="node-label">Push to Registry</div>
+                    </div>
+                    <div class="pipe-arrow"><i class="fas fa-chevron-right"></i></div>
+                    <div class="pipe-node" data-k8s-step="4">
+                        <div class="node-circle"><i class="fas fa-dharmachakra"></i></div>
+                        <div class="node-label">Deploy to K8s</div>
+                    </div>
+                    <div class="pipe-arrow"><i class="fas fa-chevron-right"></i></div>
+                    <div class="pipe-node" data-k8s-step="5">
+                        <div class="node-circle"><i class="fas fa-globe"></i></div>
+                        <div class="node-label">Live!</div>
+                    </div>
+                </div>
+
+                <div class="pipeline-status" id="k8sPipelineStatus">Ready</div>
+
+                <div class="pipeline-controls">
+                    <button class="pipe-btn" id="k8sRunBtn" onclick="runK8sPipeline()"><i class="fas fa-play"></i> Run Full Pipeline</button>
+                    <button class="pipe-btn" onclick="resetK8sPipeline()" style="background:rgba(255,255,255,0.1);margin-left:8px;"><i class="fas fa-redo"></i> Reset</button>
+                </div>
+
+                <div class="pipe-step-detail" id="k8sStepDetail">
+                    <h4><i class="fas fa-info-circle" style="color:var(--text-dim);"></i> Click "Run Full Pipeline" to start</h4>
+                    <p>Watch how CI, Docker, and Kubernetes work together to ship TicTrack to production.</p>
+                </div>
+            </div>
+
+            <!-- Why Docker + K8s -->
+            <div class="card">
+                <h3><i class="fas fa-thumbs-up"></i> Why Docker &amp; K8s for TicTrack?</h3>
+                <div class="compare-grid" style="margin-top:12px;">
+                    <div class="compare-box">
+                        <h4><i class="fas fa-exclamation-triangle" style="color:#ef4444;"></i> Without Containers <span class="badge bad">Fragile</span></h4>
+                        <ul>
+                            <li><i class="fas fa-times"></i> "Works on my machine" bugs between dev and production</li>
+                            <li><i class="fas fa-times"></i> Manual server setup for each environment</li>
+                            <li><i class="fas fa-times"></i> No auto-scaling — crashes under traffic spikes</li>
+                            <li><i class="fas fa-times"></i> Downtime during manual deploys</li>
+                            <li><i class="fas fa-times"></i> No self-healing if the app crashes</li>
+                        </ul>
+                    </div>
+                    <div class="compare-box">
+                        <h4><i class="fas fa-check-circle" style="color:var(--success);"></i> With Docker + K8s <span class="badge good">Robust</span></h4>
+                        <ul>
+                            <li><i class="fas fa-check"></i> Identical environment everywhere — same image</li>
+                            <li><i class="fas fa-check"></i> One-command deploy via <code>kubectl apply</code></li>
+                            <li><i class="fas fa-check"></i> Auto-scales from 3 to 30 replicas under load</li>
+                            <li><i class="fas fa-check"></i> Rolling updates with <strong>zero downtime</strong></li>
+                            <li><i class="fas fa-check"></i> Pods auto-restart on failure — always available</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Full Architecture Diagram -->
+            <div class="card">
+                <h3><i class="fas fa-sitemap"></i> End-to-End Architecture</h3>
+                <p>Here's how everything connects — from your keyboard to a running Kubernetes cluster:</p>
+                <div class="diagram-flow" style="margin-top:12px;">
+                    <div class="df-row">
+                        <div class="df-icon event"><i class="fas fa-code"></i></div>
+                        <div><strong>You push code</strong> to GitHub (<code>main</code> branch)</div>
+                    </div>
+                    <div class="df-line"></div>
+                    <div class="df-row">
+                        <div class="df-icon action"><i class="fab fa-github"></i></div>
+                        <div><strong>GitHub Actions</strong> triggers <code>todo.yml</code> &amp; <code>node.js.yml</code></div>
+                    </div>
+                    <div class="df-line"></div>
+                    <div class="df-row">
+                        <div class="df-icon action"><i class="fas fa-vial"></i></div>
+                        <div><strong>CI runs:</strong> Checkout → Setup Node → <code>npm ci</code> → <code>npm test</code> → Verify</div>
+                    </div>
+                    <div class="df-line"></div>
+                    <div class="df-row">
+                        <div class="df-icon action" style="background:rgba(15,164,234,0.15);color:#0ea5e9;"><i class="fab fa-docker"></i></div>
+                        <div><strong>Docker builds</strong> the image (<code>node:20-alpine</code> base + app code)</div>
+                    </div>
+                    <div class="df-line"></div>
+                    <div class="df-row">
+                        <div class="df-icon action" style="background:rgba(255,255,255,0.08);color:var(--text-dim);"><i class="fas fa-upload"></i></div>
+                        <div><strong>Image pushed</strong> to GitHub Container Registry (<code>ghcr.io</code>)</div>
+                    </div>
+                    <div class="df-line"></div>
+                    <div class="df-row">
+                        <div class="df-icon action" style="background:rgba(50,109,230,0.15);color:#326de6;"><i class="fas fa-dharmachakra"></i></div>
+                        <div><strong>Kubernetes pulls</strong> the new image &amp; performs a rolling update</div>
+                    </div>
+                    <div class="df-line"></div>
+                    <div class="df-row">
+                        <div class="df-icon result"><i class="fas fa-check-circle"></i></div>
+                        <div><strong>TicTrack is live</strong> with 3 replicas, load-balanced, and self-healing</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GitHub Action workflow for Docker + K8s -->
+            <div class="card">
+                <h3><i class="fas fa-file-code"></i> Bonus: A Workflow That Builds &amp; Deploys</h3>
+                <p>Here's what the <code>deploy.yml</code> workflow would look like to automate the full Docker + K8s pipeline:</p>
+                <div class="code-block" style="font-size:0.8rem;margin-top:12px;">
+                    <span class="key">name</span>: <span class="string">Docker Build &amp; Deploy to K8s</span><br>
+                    <span class="key">on</span>:<br>
+                    &nbsp;&nbsp;<span class="key">push</span>:<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">branches</span>: [ <span class="string">"main"</span> ]<br><br>
+                    <span class="key">jobs</span>:<br>
+                    &nbsp;&nbsp;<span class="key">deploy</span>:<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">runs-on</span>: <span class="string">ubuntu-latest</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">steps</span>:<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;- <span class="key">uses</span>: <span class="string">actions/checkout@v4</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;- <span class="key">name</span>: <span class="string">Build Docker image</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">run</span>: <span class="string">docker build -t ghcr.io/yourorg/tictrack:$&#123;&#123; github.sha &#125;&#125; .</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;- <span class="key">name</span>: <span class="string">Push to registry</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">run</span>: <span class="string">docker push ghcr.io/yourorg/tictrack:$&#123;&#123; github.sha &#125;&#125;</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;- <span class="key">name</span>: <span class="string">Deploy to Kubernetes</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">run</span>: <span class="string">kubectl set image deployment/tictrack-deployment tictrack=ghcr.io/yourorg/tictrack:$&#123;&#123; github.sha &#125;&#125;</span>
+                </div>
+                <div class="wf-explanation">
+                    <div class="wf-step">
+                        <div class="step-num">1</div>
+                        <div class="step-content">
+                            <h4>Build with Git SHA tag</h4>
+                            <p>Each build is tagged with the commit SHA (<code>$&#123;&#123; github.sha &#125;&#125;</code>) for traceability — you always know which commit is running.</p>
+                        </div>
+                    </div>
+                    <div class="wf-step">
+                        <div class="step-num">2</div>
+                        <div class="step-content">
+                            <h4>Push to Container Registry</h4>
+                            <p>The image is pushed to GitHub Container Registry (or Docker Hub, ECR, etc.). Always authenticate via <code>GITHUB_TOKEN</code>.</p>
+                        </div>
+                    </div>
+                    <div class="wf-step">
+                        <div class="step-num">3</div>
+                        <div class="step-content">
+                            <h4>Rolling Update via kubectl</h4>
+                            <p><code>kubectl set image</code> triggers a rolling update — K8s slowly replaces old pods with new ones, maintaining zero downtime.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <hr>
+        <div class="footnote">
+            <i class="fas fa-code"></i> This project uses <a href="https://github.com/features/actions" target="_blank">GitHub Actions</a> |
+            Workflows: <code>.github/workflows/todo.yml</code> &amp; <code>node.js.yml</code> |
+            <br class="mobile-only">
+            Phase 2: <a href="https://docker.com" target="_blank">Docker</a> &amp; <a href="https://kubernetes.io" target="_blank">Kubernetes</a> |
+            <a href="https://github.com" target="_blank">Push code &amp; watch them run!</a>
+        </div>
+    </div>
+
+    <script>
+        // ── Pipeline Runner ──
+        const steps = [
+            {
+                label: 'Push or PR to main',
+                icon: 'fa-code-branch',
+                desc: 'You push code or open a pull request targeting the <code>main</code> branch. GitHub automatically detects the event and kicks off the workflow.'
+            },
+            {
+                label: 'Checkout Code',
+                icon: 'fa-download',
+                desc: '<code>actions/checkout@v4</code> pulls your repository into the runner environment so subsequent steps have access to your code.'
+            },
+            {
+                label: 'Setup Node.js',
+                icon: 'fa-node-js',
+                desc: '<code>actions/setup-node@v4</code> installs the specified Node.js version (e.g. 22.x) and restores <code>node_modules</code> from cache for faster installs.'
+            },
+            {
+                label: 'Install Dependencies',
+                icon: 'fa-box',
+                desc: '<code>npm ci</code> performs a clean install using <code>package-lock.json</code>. This ensures deterministic, reproducible builds every time.'
+            },
+            {
+                label: 'Run Tests',
+                icon: 'fa-vial',
+                desc: '<code>npm test --if-present</code> executes the test suite. For TicTrack, this validates API endpoints, Excel operations, and task CRUD logic.'
+            },
+            {
+                label: 'Verify App Boots',
+                icon: 'fa-globe',
+                desc: 'The dev server starts, then <code>curl -f http://localhost:3000</code> confirms the app is actually serving requests. If the server crashes, the pipeline fails.'
+            }
+        ];
+
+        let currentStep = -1;
+        let running = false;
+
+        function resetPipeline() {
+            currentStep = -1;
+            running = false;
+            document.querySelectorAll('.pipe-node').forEach(n => {
+                n.classList.remove('active', 'done');
+            });
+            document.getElementById('pipelineStatus').textContent = 'Ready';
+            document.getElementById('pipelineStatus').style.cssText = '';
+            document.getElementById('stepDetail').innerHTML =
+                '<h4><i class="fas fa-info-circle" style="color:var(--text-dim);"></i> Click "Run Pipeline" to start</h4>' +
+                '<p>Each stage will light up with a description of what\'s happening.</p>';
+            document.getElementById('pipeRunBtn').disabled = false;
+            document.getElementById('pipeRunBtn').innerHTML = '<i class="fas fa-play"></i> Run Pipeline';
+        }
+
+        function runPipeline() {
+            if (running) return;
+            running = true;
+            currentStep = -1;
+            document.querySelectorAll('.pipe-node').forEach(n => n.classList.remove('active', 'done'));
+            document.getElementById('pipeRunBtn').disabled = true;
+            document.getElementById('pipeRunBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running...';
+
+            function advance() {
+                currentStep++;
+                if (currentStep >= steps.length) {
+                    document.getElementById('pipelineStatus').textContent = 'All checks passed ✓';
+                    document.getElementById('pipelineStatus').style.cssText =
+                        'background:rgba(34,197,94,0.1);border-color:rgba(34,197,94,0.25);color:var(--success);';
+                    document.getElementById('stepDetail').innerHTML =
+                        '<h4><i class="fas fa-check-circle" style="color:var(--success);"></i> Pipeline Complete</h4>' +
+                        '<p>All steps passed. Your code is safe to merge and deploy!</p>';
+                    document.getElementById('pipeRunBtn').disabled = false;
+                    document.getElementById('pipeRunBtn').innerHTML = '<i class="fas fa-play"></i> Run Pipeline';
+                    running = false;
+                    return;
+                }
+
+                const nodes = document.querySelectorAll('.pipe-node');
+                // mark done for previous
+                for (let i = 0; i < currentStep; i++) {
+                    nodes[i].classList.remove('active');
+                    nodes[i].classList.add('done');
+                }
+                // activate current
+                nodes[currentStep].classList.remove('done');
+                nodes[currentStep].classList.add('active');
+
+                const s = steps[currentStep];
+                document.getElementById('pipelineStatus').textContent = s.label;
+                document.getElementById('pipelineStatus').style.cssText =
+                    'background:rgba(139,92,246,0.1);border-color:rgba(139,92,246,0.25);color:var(--primary);';
+                document.getElementById('stepDetail').innerHTML =
+                    '<h4><i class="fas fa-arrow-right" style="color:var(--primary);"></i> ' + s.label + '</h4>' +
+                    '<p>' + s.desc + '</p>';
+
+                setTimeout(advance, 1200);
+            }
+
+            setTimeout(advance, 500);
+        }
+
+        // ── Workflow Tab Switcher ──
+        function switchWF(name) {
+            document.querySelectorAll('.wf-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.wf-view').forEach(v => v.style.display = 'none');
+            if (name === 'todo') {
+                document.querySelector('.wf-tab').classList.add('active');
+                document.getElementById('wf-todo').style.display = 'block';
+            } else {
+                document.querySelectorAll('.wf-tab')[1].classList.add('active');
+                document.getElementById('wf-nodeci').style.display = 'block';
+            }
+        }
+
+        // ── K8s Manifest Tab Switcher ──
+        function switchK8s(name) {
+            document.getElementById('k8sDeployTab').classList.remove('active');
+            document.getElementById('k8sServiceTab').classList.remove('active');
+            document.getElementById('k8s-deploy').style.display = 'none';
+            document.getElementById('k8s-service').style.display = 'none';
+            if (name === 'deploy') {
+                document.getElementById('k8sDeployTab').classList.add('active');
+                document.getElementById('k8s-deploy').style.display = 'block';
+            } else {
+                document.getElementById('k8sServiceTab').classList.add('active');
+                document.getElementById('k8s-service').style.display = 'block';
+            }
+        }
+
+        // ── K8s Pipeline Runner ──
+        const k8sSteps = [
+            { label: 'Code Push to main', icon: 'fa-code-branch', desc: 'You push code to the <code>main</code> branch. GitHub Actions detects the push and triggers the CI/CD workflow.' },
+            { label: 'CI Tests Pass', icon: 'fa-vial', desc: '<code>npm ci</code> installs deps, <code>npm test</code> runs the test suite. If tests fail, the pipeline stops here.' },
+            { label: 'Docker Build Image', icon: 'fa-docker', desc: 'Docker builds a container image using the <code>Dockerfile</code>. The image includes Node.js 20 Alpine, all dependencies, and TicTrack source code.' },
+            { label: 'Push to Registry', icon: 'fa-upload', desc: 'The image is tagged with the commit SHA and pushed to GitHub Container Registry (<code>ghcr.io</code>). This makes it available for Kubernetes to pull.' },
+            { label: 'Deploy to Kubernetes', icon: 'fa-dharmachakra', desc: '<code>kubectl set image</code> updates the Deployment with the new image tag. K8s performs a rolling update — replacing pods gradually with zero downtime.' },
+            { label: 'TicTrack is Live!', icon: 'fa-globe', desc: 'All 3 replicas are running the new version. The LoadBalancer Service distributes traffic. K8s auto-heals if any pod fails.' }
+        ];
+
+        let k8sStep = -1;
+        let k8sRunning = false;
+
+        function resetK8sPipeline() {
+            k8sStep = -1;
+            k8sRunning = false;
+            document.querySelectorAll('#k8sPipeline .pipe-node').forEach(n => {
+                n.classList.remove('active', 'done');
+            });
+            document.getElementById('k8sPipelineStatus').textContent = 'Ready';
+            document.getElementById('k8sPipelineStatus').style.cssText = '';
+            document.getElementById('k8sStepDetail').innerHTML =
+                '<h4><i class="fas fa-info-circle" style="color:var(--text-dim);"></i> Click "Run Full Pipeline" to start</h4>' +
+                '<p>Watch how CI, Docker, and Kubernetes work together to ship TicTrack to production.</p>';
+            document.getElementById('k8sRunBtn').disabled = false;
+            document.getElementById('k8sRunBtn').innerHTML = '<i class="fas fa-play"></i> Run Full Pipeline';
+        }
+
+        function runK8sPipeline() {
+            if (k8sRunning) return;
+            k8sRunning = true;
+            k8sStep = -1;
+            document.querySelectorAll('#k8sPipeline .pipe-node').forEach(n => n.classList.remove('active', 'done'));
+            const btn = document.getElementById('k8sRunBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running...';
+
+            function advance() {
+                k8sStep++;
+                if (k8sStep >= k8sSteps.length) {
+                    document.getElementById('k8sPipelineStatus').textContent = 'Deployment successful ✓';
+                    document.getElementById('k8sPipelineStatus').style.cssText =
+                        'background:rgba(34,197,94,0.1);border-color:rgba(34,197,94,0.25);color:var(--success);';
+                    document.getElementById('k8sStepDetail').innerHTML =
+                        '<h4><i class="fas fa-check-circle" style="color:var(--success);"></i> Full Pipeline Complete</h4>' +
+                        '<p>TicTrack is running on Kubernetes with 3 replicas, load-balanced, and self-healing. The entire process was automated from code push to production deployment.</p>';
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-play"></i> Run Full Pipeline';
+                    k8sRunning = false;
+                    return;
+                }
+
+                const nodes = document.querySelectorAll('#k8sPipeline .pipe-node');
+                for (let i = 0; i < k8sStep; i++) {
+                    nodes[i].classList.remove('active');
+                    nodes[i].classList.add('done');
+                }
+                nodes[k8sStep].classList.remove('done');
+                nodes[k8sStep].classList.add('active');
+
+                const s = k8sSteps[k8sStep];
+                document.getElementById('k8sPipelineStatus').textContent = s.label;
+                document.getElementById('k8sPipelineStatus').style.cssText =
+                    'background:rgba(139,92,246,0.1);border-color:rgba(139,92,246,0.25);color:var(--primary);';
+                document.getElementById('k8sStepDetail').innerHTML =
+                    '<h4><i class="fas fa-arrow-right" style="color:var(--primary);"></i> ' + s.label + '</h4>' +
+                    '<p>' + s.desc + '</p>';
+
+                setTimeout(advance, 1300);
+            }
+
+            setTimeout(advance, 500);
+        }
+    </script>
+</body>
+</html>
