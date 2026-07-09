@@ -1,1 +1,81 @@
-hi for test
+Perfect. Now that you've disconnected the Git repository, Vercel will no longer deploy automatically when you push to GitHub.
+
+The next step is to let GitHub Actions perform the deployment after your CI steps pass.
+
+Step 1: Install the Vercel CLI (once on your local machine)
+npm install -g vercel
+Step 2: Link your project to Vercel
+
+From your project's root directory, run:
+
+vercel link
+
+It will ask you a few questions:
+
+Log in to Vercel (if needed).
+Choose your team/account.
+Select your existing Task-Tracker project.
+
+This creates a .vercel folder containing your project information.
+
+Step 3: Get your Vercel Token
+Log in to Vercel.
+Go to Account Settings → Tokens.
+Create a new token (e.g., github-actions).
+Copy the token.
+Step 4: Get your Project ID and Org ID
+
+After vercel link, open:
+
+.vercel/project.json
+
+It will look like:
+
+{
+  "projectId": "prj_xxxxxxxxx",
+  "orgId": "team_xxxxxxxxx"
+}
+
+Copy both values.
+
+Step 5: Add GitHub Secrets
+
+In your GitHub repository:
+
+Settings → Secrets and variables → Actions
+
+Create these secrets:
+
+VERCEL_TOKEN
+VERCEL_ORG_ID
+VERCEL_PROJECT_ID
+
+Paste the values you collected.
+
+Step 6: Update your GitHub Actions workflow
+
+At the end of your workflow, add a deploy step like:
+
+- name: Install Vercel CLI
+  run: npm install -g vercel
+
+- name: Deploy to Vercel
+  run: vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }}
+  env:
+    VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+    VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+Since GitHub Actions stops on the first failed step, deployment will only happen if all previous steps (install, lint, test, build, etc.) succeed.
+
+Before we edit the workflow
+
+Please answer these two questions so I can give you the exact YAML:
+
+What framework is your project?
+React + Vite
+Next.js
+Plain HTML/CSS/JS
+Something else
+Can you paste your current .github/workflows/*.yml file?
+
+I'll modify it so it performs CI first and deploys to Vercel only if CI succeeds.
