@@ -54,3 +54,4 @@ VERCEL_TOKEN
 VERCEL_ORG_ID
 VERCEL_PROJECT_ID
 
+check url: vercel --prod
